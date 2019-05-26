@@ -1,7 +1,7 @@
 // variables
 const cartBtn = document.querySelector('.cart-btn');
 const closeCartBtn = document.querySelector('.close-cart');
-const clearCartBtn = document.querySelector('.clear-btn');
+const clearCartBtn = document.querySelector('.clear-cart');
 const cartDOM = document.querySelector('.cart');
 const cartOverlay = document.querySelector('.cart-overlay');
 const cartItems = document.querySelector('.cart-items');
@@ -115,6 +115,74 @@ class UI{
         cartOverlay.classList.add('transparentBcg');
         cartDOM.classList.add('showCart');
     }
+    setupApp(){
+        cart = Storage.getCart();
+        this.setCartValues(cart);
+        this.populate(cart);
+        cartBtn.addEventListener('click',this.showCart);
+        closeCartBtn.addEventListener('click',this.hideCart);
+    }
+    populate(cart){
+        cart.forEach(item=>this.addCartItem(item));
+    }
+    hideCart(){
+        cartOverlay.classList.remove('transparentBcg');
+        cartDOM.classList.remove('showCart');
+    }
+    cartLogic(){
+        clearCartBtn.addEventListener('click', ()=>{
+            this.clearCart();
+        });
+        cartContent.addEventListener('click',event => {
+            if(event.target.classList.contains('remove-item')){
+                let removeItem = event.target;
+                let id = removeItem.dataset.id;
+                cartContent.removeChild(removeItem.parentElement.parentElement);
+                this.removeItem(id);
+            } else if(event.target.classList.contains('fa-chevron-up')){
+                let addAmount = event.target;
+                let id = addAmount.dataset.id;
+                let tempItem = cart.find(item => item.id === id);
+                tempItem.amount = tempItem.amount + 1;
+                Storage.saveCart(cart);
+                this.setCartValues(cart);
+                addAmount.nextElementSibling.innerText = tempItem.amount;
+            } else if(event.target.classList.contains('fa-chevron-down')){
+                let lowerAmount = event.target;
+                let id = lowerAmount.dataset.id;
+                let tempItem = cart.find(item => item.id === id);
+                tempItem.amount = tempItem.amount - 1;
+                if(tempItem.amount > 0){
+                    Storage.saveCart(cart);
+                    this.setCartValues(cart);
+                    lowerAmount.previousElementSibling.innerText = tempItem.amount;
+                }else{
+                    cartContent.removeChild(lowerAmount.parentElement.parentElement);
+                    this.removeItem(id);
+                }
+            }
+        })
+    }
+    clearCart(){
+        let cartItems = cart.map(item => item.id);
+        cartItems.forEach(id => this.removeItem(id));
+        while(cartContent.children.length > 0){
+            cartContent.removeChild(cartContent.children[0]);
+        }
+        this.hideCart();
+    }
+    removeItem(id){
+        cart = cart.filter(item => item.id !== id);
+        this.setCartValues(cart);
+        Storage.saveCart(cart);
+        let button = this.getSingleButton(id);
+        button.disabled = false;
+        button.innerHTML = `<i class="fas fa-shopping-cart"></i>add to bag`;
+        console.log(button);
+    }
+    getSingleButton(id){
+        return buttonsDOM.find(button => button.dataset.id === id);
+    }
 }
 // local storage
 class Storage{
@@ -128,11 +196,16 @@ class Storage{
     static saveCart(cart){
         localStorage.setItem('cart', JSON.stringify(cart));
     }
+    static getCart(){
+        return localStorage.getItem('cart')?JSON.parse(localStorage.getItem('cart')):[];
+    }
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{
     const ui = new UI();
     const products = new Products();
+    // setup application
+    ui.setupApp();
 
     // get all products
     products.getProducts().then(products => {
@@ -140,5 +213,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
         Storage.saveProducts(products);
     }).then(()=>{
         ui.getBagButtons();
+        ui.cartLogic();
     });
 });
