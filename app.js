@@ -178,7 +178,6 @@ class UI{
         let button = this.getSingleButton(id);
         button.disabled = false;
         button.innerHTML = `<i class="fas fa-shopping-cart"></i>add to bag`;
-        console.log(button);
     }
     getSingleButton(id){
         return buttonsDOM.find(button => button.dataset.id === id);
